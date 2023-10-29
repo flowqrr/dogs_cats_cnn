@@ -36,6 +36,7 @@ class ConvBlock(nn.Module):
 
 
 class MyModel(nn.Module):
+
     # input features = 3 (for the 3 color channels)
     def __init__(self, input_features=3):
         super(MyModel, self).__init__()
@@ -90,24 +91,43 @@ class MyModel(nn.Module):
 
         return x
 
+model = MyModel()
+model = torch.load("pytorch_model.pth").to('cuda')
+model.eval()
+
 preprocess = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize((224,224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.4884, 0.4551, 0.4170], std=[0.2256, 0.2210, 0.2214])
 ])
 
-model = MyModel()
-model = torch.load("pytorch_model.pth")
-model.eval()
+# region testing locally
+
+# image_path = "E:/dogs_vs_cats/train/train/dog.3.jpg"
+# image = Image.open(image_path)
+# image = preprocess(image).unsqueeze(0).to('cuda')
+#
+# with torch.no_grad():
+#     output = model(image)
+#     predicted = (output > 0.5).int()
+#
+# predicted = predicted.cpu().numpy()
+# predicted_label = "cat" if predicted == 1 else "dog"
+
+# endregion
+
+# region streamlit
 
 st.title("Cat or Dog Image Classifier")
 # file uploader widget
-uploaded_image = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+uploaded_image = st.file_uploader("Upload your image", type=["jpg", "jpeg", "png"])
 
 if uploaded_image is not None:
     # displaying the image
     image = Image.open(uploaded_image)
-    st.image(image, caption='your image', use_column_width=True)
+    left_column, center_column, right_column = st.columns(3)
+    with center_column:
+        st.image(image, width=300)
 
     # preparing the image
     image = preprocess(image).unsqueeze(0).to('cuda')
@@ -115,8 +135,13 @@ if uploaded_image is not None:
     # make a prediction
     with torch.no_grad():
         output = model(image)
-        predicted_class = output.argmax(1).item()
-        predicted_label = "cat" if predicted_class == 1 else "dog"
+        predicted = (output > 0.5).int()
+
+    predicted = predicted.cpu().numpy()
+    predicted_label = "cat" if predicted == 1 else "dog"
 
     # display the prediction
-    st.write(f"This is a {predicted_label}.")
+    with center_column:
+        st.write(f"This is a {predicted_label}.")
+
+# endregion
