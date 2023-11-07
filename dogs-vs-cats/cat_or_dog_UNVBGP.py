@@ -6,6 +6,7 @@ import streamlit as st
 from torchvision import transforms
 from PIL import Image
 
+# region model
 
 class ConvBlock(nn.Module):
     def __init__(self,
@@ -100,6 +101,8 @@ preprocess = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.4884, 0.4551, 0.4170], std=[0.2256, 0.2210, 0.2214])
 ])
+
+# endregion
 
 # region testing locally
 

@@ -215,12 +215,16 @@ class Network:
 import os
 import cv2
 
-image_size = 28
+image_size = 128
+number_of_images = 0
 
 
-def load_and_preprocess_data(data_dir, image_size):
+def load_and_preprocess_data(data_dir, image_size, sample_size = 0):
     images = []
     labels = []
+
+    if sample_size == 0:
+        sample_size = len(os.listdir(data_dir))
 
     # loading images
     for filename in os.listdir(data_dir):
@@ -246,29 +250,13 @@ def load_and_preprocess_data(data_dir, image_size):
     images = images[permutation]
     labels = labels[permutation]
 
-    return images, labels
+    return images[:sample_size], labels[:sample_size]
 
 train_data_dir = 'E:/dogs_vs_cats/train/train_small'
 test_data_dir = 'E:/dogs_vs_cats/train/train_small'
 
-x_train, y_train = load_and_preprocess_data(train_data_dir, image_size)
-x_test, y_test = load_and_preprocess_data(test_data_dir, image_size)
-
-# network = Network([
-#     Convolutional(input_shape=(1, image_size, image_size),
-#                   kernel_size=3,
-#                   depth=5),
-#     Relu(),
-#     Reshape(input_shape=(5, image_size - 2, image_size - 2),
-#             output_shape=(5 * (image_size - 2) * (image_size - 2), 1)),
-#
-#     Dense(n_input=(5 * (image_size - 2) * (image_size - 2)),
-#           n_output=100),
-#     Sigmoid(),
-#     Dense(n_input=100,
-#           n_output=2),
-#     Sigmoid()
-# ])
+x_train, y_train = load_and_preprocess_data(train_data_dir, image_size, number_of_images)
+x_test, y_test = load_and_preprocess_data(test_data_dir, image_size, number_of_images)
 
 conv1 = Convolutional(input_shape=(1, image_size, image_size),
                       kernel_size=3,
@@ -276,7 +264,7 @@ conv1 = Convolutional(input_shape=(1, image_size, image_size),
 
 conv2 = Convolutional(input_shape=conv1.output_shape,
                       kernel_size=3,
-                      depth=10)
+                      depth=5)
 
 reshaped_int = np.prod(np.array(conv2.output_shape)).item()
 
@@ -291,19 +279,16 @@ network = Network([
             output_shape=(reshaped_int, 1)),
 
     Dense(n_input=reshaped_int,
-          n_output=100),
+          n_output=256),
 
     Sigmoid(),
 
-    Dense(n_input=100,
+    Dense(n_input=256,
           n_output=2),
 
     Sigmoid()
 ])
 
-# Define the loss function
-loss_fn = binary_cross_entropy
-loss_prime_fn = binary_cross_entropy_derivative
 
 print("TRAIN:")
 # train
@@ -313,19 +298,6 @@ network.train(
     x_train=x_train,
     y_train=y_train,
     epochs=30,
-    learning_rate=0.001
+    learning_rate=0.1
 )
-
-network.plot_history()
-
-# # test
-# print("TEST:")
-# for x, y in zip(x_test, y_test):
-#     output = network.predict(x)
-#     predicted = "cat" if np.argmax(output) == 1 else "dog"
-#     true = "cat" if np.argmax(y) == 1 else "dog"
-#     if predicted == true:
-#         print(f"pred: {predicted}, true: {true}")
-#     else:
-#         print(f"pred: {predicted}, true: {true}\tX")
 
